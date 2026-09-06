@@ -83,28 +83,28 @@ block DSL and through Active Record's other argument styles. Only query
 construction (through `to_sql`) is measured — every style produces the same
 SQL, so execution costs the same regardless.
 
-Queries built per second (ruby 4.1.0dev, Active Record 8.1.3, one machine —
+Queries built per second (ruby 4.1.0dev, Active Record 8.1.3.1, one machine —
 treat the ratios, not the absolute numbers, as the result):
 
 | query | string | arel | block (this gem) | hash | relation and/or |
 | --- | --- | --- | --- | --- | --- |
-| simple equality | 42.5k | 42.0k | 37.7k | 31.5k | — |
-| range (BETWEEN) | — | 34.6k | 32.7k | 24.8k | — |
-| LIKE | 41.5k | 41.0k | 36.8k | — | — |
-| compound AND/OR | 34.4k | 27.7k | 24.4k | — | 11.9k |
+| simple equality | 40.9k | 40.5k | 36.1k | 31.5k | — |
+| range (BETWEEN) | — | 33.7k | 31.8k | 24.7k | — |
+| LIKE | 40.1k | 39.9k | 36.4k | — | — |
+| compound AND/OR | 32.8k | 26.7k | 23.4k | — | 11.4k |
 
 Allocated memory per built query:
 
 | query | arel | block (this gem) | hash | string | relation and/or |
 | --- | --- | --- | --- | --- | --- |
-| simple equality | 2,600 B | 2,832 B | 3,328 B | 3,448 B | — |
-| compound AND/OR | 3,208 B | 3,584 B | — | 4,680 B | 9,120 B |
+| simple equality | 2,176 B | 2,392 B | 2,576 B | 2,976 B | — |
+| compound AND/OR | 2,744 B | 3,104 B | — | 4,144 B | 7,152 B |
 
 In short: the block DSL is 6–13% slower than hand-written Arel (which it
 compiles to), a little faster than hash conditions, and both faster and
 leaner than `where(...).and(where(...).or(where(...)))` relation chains,
 which pay for structural-compatibility checks and relation copies. The
-`Proc#refined` call itself costs about 150 ns of the ~25 μs build — the
+`Proc#refined` call itself costs about 170 ns of the ~28 μs build — the
 re-interpretation of the block is not where the time goes. Against a
 database round trip of tens to hundreds of microseconds, none of these
 differences are visible in an application.
@@ -114,8 +114,8 @@ under the refinements, `Proc#refined` deep-copies its instruction sequence,
 nested blocks included. The copy is made lazily on the refined proc's first
 call and memoized per block and refinement list for the life of the process,
 so it is paid once per `where { ... }` call site, not per query — the
-benchmark measures the copy at the size of the original (568 bytes for the
-simple-equality block, 888 bytes for the compound one), and a thousand
+benchmark measures the copy at the size of the original (552 bytes for the
+simple-equality block, 872 bytes for the compound one), and a thousand
 further calls from the same call site copy nothing. Steady state, an
 application holds one extra copy of each distinct query block's bytecode:
 a few hundred bytes per call site. "Per call site" assumes blocks compiled
