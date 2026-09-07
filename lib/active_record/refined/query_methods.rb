@@ -132,7 +132,7 @@ module ActiveRecord
         unless name.is_a?(Symbol)
           raise ArgumentError, "from_cte takes the CTE's name as a symbol"
         end
-        relation = from(name, as: klass.table_name)
+        relation = from(name, as: model.table_name)
         relation.from_cte_value = name
         relation
       end
@@ -318,7 +318,7 @@ module ActiveRecord
 
         def evaluate_block(&block)
           refined_block = block.refined(ActiveRecord::Refined::BlockSyntax)
-          BlockContext.new(klass).instance_exec(&refined_block)
+          BlockContext.new(model).instance_exec(&refined_block)
         end
 
         # WITH ROLLUP trails the whole group list, so on the MySQL family a
@@ -328,7 +328,7 @@ module ActiveRecord
           entries = Array(result)
           return if entries.size == 1
           return unless entries.any? { |node| node.is_a?(AST::GroupingSets) }
-          return unless Dialect.for(klass).grouping_by_with_rollup?
+          return unless Dialect.for(model).grouping_by_with_rollup?
 
           raise ArgumentError,
             "WITH ROLLUP takes the whole group list; group by the rollup alone"
@@ -341,7 +341,7 @@ module ActiveRecord
               "#{result.inspect} is a string, not a condition; sql(...) " \
               "writes one as SQL"
           end
-          result.to_arel(table, klass)
+          result.to_arel(table, model)
         end
 
         # The top of a select, order or group list.  A bare string is refused
@@ -367,8 +367,8 @@ module ActiveRecord
 
         def to_arel_field(node)
           case node
-          when AST::Sql then node.field_arel(klass)
-          when AST::Node then node.to_arel(table, klass)
+          when AST::Sql then node.field_arel(model)
+          when AST::Node then node.to_arel(table, model)
           when Symbol then table[node]
           else node
           end
@@ -396,16 +396,16 @@ module ActiveRecord
 
           aliased = Arel::Nodes::TableAlias.new(
             Arel::Nodes::SqlLiteral.new("LATERAL (#{relation.to_sql})"), alias_name)
-          on = block ? evaluate_block(&block).to_arel(table, klass) : Arel::Nodes::True.new
+          on = block ? evaluate_block(&block).to_arel(table, model) : Arel::Nodes::True.new
           join_class.new(aliased, Arel::Nodes::On.new(on))
         end
 
         def check_lateral_support
-          Dialect.for(klass).check_lateral(klass)
+          Dialect.for(model).check_lateral(model)
         end
 
         def check_full_outer_support
-          return if Dialect.for(klass).full_outer_join_supported?
+          return if Dialect.for(model).full_outer_join_supported?
           raise NotImplementedError, "a full outer join has no equivalent on MySQL"
         end
 
@@ -426,7 +426,7 @@ module ActiveRecord
         # place in the gem that writes any: the keyword is fixed and the names
         # are quoted by the adapter, so nothing of the caller's is in it.
         def build_cross_join(target_table, alias_name)
-          joined = klass.with_connection do |connection|
+          joined = model.with_connection do |connection|
             name = connection.quote_table_name(target_table.to_s)
             alias_name ? "#{name} #{connection.quote_table_name(alias_name.to_s)}" : name
           end
@@ -437,7 +437,7 @@ module ActiveRecord
           ast = evaluate_block(&block)
           arel_table = Arel::Table.new(target_table)
           arel_table = arel_table.alias(alias_name) if alias_name
-          join_class.new(arel_table, Arel::Nodes::On.new(ast.to_arel(table, klass)))
+          join_class.new(arel_table, Arel::Nodes::On.new(ast.to_arel(table, model)))
         end
     end
   end

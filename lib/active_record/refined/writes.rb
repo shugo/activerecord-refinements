@@ -59,7 +59,7 @@ module ActiveRecord
         # -- the statement is already about one table -- and the right is the
         # expression, compiled here because a string is what on_duplicate reads.
         def set_clause(updates)
-          klass.with_connection do |connection|
+          model.with_connection do |connection|
             updates.map do |column, value|
               expression = connection.visitor.compile(
                 to_arel_field(value), Arel::Collectors::SQLString.new)
