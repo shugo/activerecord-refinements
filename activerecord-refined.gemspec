@@ -25,7 +25,7 @@ Gem::Specification.new do |gem|
   # ruby-master builds, which sort before the 4.1.0 release.
   gem.required_ruby_version = ">= 4.1.0.dev"
 
-  gem.add_dependency "activerecord", [">= 7.0"]
+  gem.add_dependency "activerecord", [">= 7.2"]
   gem.add_development_dependency "sqlite3", [">= 0"]
   gem.add_development_dependency "minitest", [">= 0"]
   gem.add_development_dependency "rake", [">= 0"]

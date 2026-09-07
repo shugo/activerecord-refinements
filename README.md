@@ -19,7 +19,7 @@ Author.
 ## Requirements
 
 * Ruby 4.1 or later (for `Proc#refined`; not released yet, so a `ruby-master` build is needed for now)
-* Active Record 7.0 or later
+* Active Record 7.2 or later
 
 ## Installation
 
